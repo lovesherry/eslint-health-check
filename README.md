@@ -26,7 +26,6 @@
 - 检查 ESLint 配置文件类型、兼容性与潜在问题
 - 递归分析所有 ESLint 相关依赖的版本兼容性
 - 聚合所有继承/插件/overrides 后的最终 ESLint 规则，支持多文件类型
-- 检测 ESLint/Prettier 典型规则冲突
 - 输出结构化 Markdown 健康报告，支持 AI Agent 解析
 
 ---
