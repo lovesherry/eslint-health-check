@@ -1,0 +1,166 @@
+project:
+  name: eslint-health-check
+  description: >
+    CLI 工具，用于全面检测 ESLint 配置健康状况，包括 IDE 插件状态、规则冲突、
+    依赖版本兼容性、配置文件格式兼容 ESLint 版本等，支持 AI 辅助建议输出。
+  type: cli-tool
+  language: typescript
+  supportsMCP: true
+  packageModuleType: commonjs
+
+cli:
+  entry: bin/index.ts
+  command: eslint-health-check
+  options:
+    - flag: "--mcp"
+      description: 输出机器可解析的 JSON，用于 AI Agent 解析
+    - flag: "--markdown"
+      description: 输出格式化 Markdown 报告，支持文件或 stdout
+    - flag: "--json"
+      description: 输出原始诊断 JSON 数据
+    - flag: "--fix-simulate"
+      description: 模拟 ESLint --fix，展示可自动修复的eslint配置
+
+output:
+  format: markdown
+  fileOutput:
+    enabled: true
+    default: eslint-report.md
+  structure:
+    sections:
+      - Node & Environment
+      - IDE Plugin Detection
+      - ESLint Dependency Analysis
+      - Rule Aggregation & Status
+      - Rule Conflicts
+      - Suggestions
+  markdown:
+    useEmojis: true
+    colorStatus: true
+    showRuleSources: true
+
+features:
+  - detectNodeVersion:
+      description: "记录当前环境的node版本，目的是看其是否满足node_modules和IDE中eslint插件对于node版本的要求"
+  - detectEslintPluginInIDE:
+      supportedIDEs:
+        - VSCode
+        - WebStorm
+  - detectConfigFile:
+      supported:
+        - .eslintrc
+        - .eslintrc.json
+        - .eslintrc.js
+        - eslint.config.js
+  - detectConfigFormat:
+      description: >
+        检测 ESLint 配置文件格式是否与安装版本兼容
+      actions:
+        - warnIfFlatConfigUsedWithEslintLT9: true
+        - warnIfTraditionalConfigUsedWithEslintGTE9: true
+  - analyzeRuleUsage:
+      description: "提取所有规则，标注来源和启用状态"
+  - detectRuleConflicts:
+      description: >
+        识别规则之间的重叠、冲突，涵盖核心 ESLint、插件、预设及格式化工具
+  - checkPluginVersionCompatibility:
+      targets:
+        - eslint
+        - @typescript-eslint/eslint-plugin
+        - prettier
+        - eslint-plugin-import
+        - eslint-plugin-react
+      compatibilityMatrix: true
+  - simulateFixableRules
+  - generateAiSuggestions
+  # 新增：每个分析器需单独成文件，导出标准函数，返回结构体，便于主流程聚合调用
+
+aiSuggestions:
+  enabled: true
+  outputFormat:
+    - markdown
+    - json
+  structure:
+    - title
+    - reason
+    - suggestedAction
+    - riskLevel: [low, medium, high]
+    - docsLink
+  includes:
+    - IDE 插件未检测到或未激活
+    - ESLint 相关插件版本过旧或不兼容
+    - 缺失推荐核心规则（如 quotes、semi）
+    - Prettier 与 ESLint 规则冲突
+    - ESLint 9+ 扁平配置迁移建议
+    - 未应用的自动修复规则提示
+
+architecture:
+  directoryLayout:
+    src/:
+      - analyzers/
+      - suggesters/
+      - reporters/
+      - utils/
+      - cli/
+    bin/:
+      - index.ts
+    output/:
+      - eslint-report.md
+      - eslint-health.json
+    test/:
+      - analyzers/
+      - integration/
+
+pluginSupport:
+  supportedPlugins:
+    - "@typescript-eslint"
+    - "eslint-plugin-prettier"
+    - "eslint-plugin-import"
+    - "eslint-plugin-react"
+    - "eslint-plugin-vue"
+    - "eslint-plugin-jsx-a11y"
+  allowCustomDetection: true
+
+mcpIntegration:
+  enabled: true
+  purpose: "支持 AI Agent 读取诊断数据并生成建议"
+  output:
+    format: json
+    fields:
+      - nodeVersion
+      - eslintVersion
+      - detectedID
+      - idePluginStatus
+      - eslintPackages: [name, version, status]
+      - configFile: [name, format, isFlatConfig]
+      - allRules: [name, status, source]
+      - ruleConflicts: [ruleName, sources]
+      - suggestions: [title, reason, action, riskLevel, docsLink]
+
+packaging:
+  targetModule: commonjs
+  tsconfig:
+    compilerOptions:
+      module: commonjs
+      target: es2020
+      outDir: dist
+      rootDir: src
+      declaration: true
+      esModuleInterop: true
+      resolveJsonModule: true
+      strict: true
+      moduleResolution: node
+  packageJson:
+    main: dist/bin/index.js
+    type: commonjs
+    bin:
+      eslint-health-check: dist/bin/index.js
+
+chatgpt:
+  role: ESLint健康检测专家
+  behavior:
+    - 严格遵循规则分析和输出规范
+    - 输出分级建议，标注风险等级
+    - Markdown中使用 Emoji 与颜色增强可读性
+    - 详细解释配置兼容性问题及解决方案
+    - 针对规则冲突推荐替代和调整策略

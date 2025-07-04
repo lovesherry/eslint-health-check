@@ -1,0 +1,40 @@
+{
+  "name": "eslint-health-check",
+  "version": "0.1.0",
+  "description": "CLI 工具，用于全面检测 ESLint 配置健康状况，包括 IDE 插件状态、规则冲突、依赖版本兼容性、配置文件格式兼容 ESLint 版本等，支持 AI 辅助建议输出。",
+  "main": "dist/bin/index.js",
+  "type": "commonjs",
+  "bin": {
+    "eslint-health-check": "dist/bin/index.js"
+  },
+  "scripts": {
+    "lint": "eslint src",
+    "build": "yarn lint && tsc",
+    "start": "npm run build && node dist/bin/index.js"
+  },
+  "dependencies": {
+    "commander": "^11.0.0",
+    "eslint": "9.30.1",
+    "fast-glob": "3.3.3",
+    "js-yaml": "4.1.0",
+    "semver": "^7.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.30.1",
+    "@types/js-yaml": "4.0.9",
+    "@types/node": "^20.0.0",
+    "@types/semver": "7.7.0",
+    "@typescript-eslint/eslint-plugin": "8.35.1",
+    "@typescript-eslint/parser": "8.35.1",
+    "eslint-config-prettier": "10.1.5",
+    "eslint-plugin-prettier": "5.5.1",
+    "prettier": "3.6.2",
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "eslint": ">=8.0.0 <10.0.0"
+  },
+  "engines": {
+    "node": ">=18.18.0"
+  }
+}
