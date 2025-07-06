@@ -1,19 +1,24 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { FileExtType } from '../types';
 
-export const TMP_TYPES = [
-  { ext: 'js', name: 'index.js' },
-  { ext: 'ts', name: 'index.ts' },
-  { ext: 'jsx', name: 'index.jsx' },
-  { ext: 'tsx', name: 'index.tsx' },
-  { ext: 'vue', name: 'index.vue' },
-];
+export const TMP_TYPES: FileExtType[] = ['.js', '.ts', '.jsx', '.tsx', '.vue'];
+const TMP_FILES = TMP_TYPES.map((ext) => ({
+  ext,
+  name: `index${ext}`,
+}));
 
 export function createTmpFilesForTypes(
-  dir: string = path.join(process.cwd(), 'eslint-health-check')
+  dir: string = path.join(process.cwd(), 'eslint-health-check'),
+  extensions?: string[]
 ) {
   fs.mkdirSync(dir, { recursive: true });
-  const files = TMP_TYPES.map((t) => {
+
+  const typesToCreate = extensions
+    ? TMP_FILES.filter((t) => extensions.includes(t.ext))
+    : TMP_FILES;
+
+  const files = typesToCreate.map((t) => {
     const filePath = path.join(dir, t.name);
     fs.writeFileSync(filePath, '// temp file for config analysis');
     return { ...t, filePath };

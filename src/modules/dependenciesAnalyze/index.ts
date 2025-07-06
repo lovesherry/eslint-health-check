@@ -1,7 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import semver from 'semver';
-import type { PackageJson, PluginCompatInfo } from '../../types';
+import type { DepCompatibilityResult, PluginCompatInfo } from '../../types';
+import { hasEslint } from '../../utils/eslintUtil';
+import { getPkgJson } from '../../utils/getPkgJson';
 
 function isEslintRelated(pkgName: string): boolean {
   return /eslint/i.test(pkgName);
@@ -27,19 +29,7 @@ function getAllNodeModulesDirs(baseDir: string): string[] {
   return dirs;
 }
 
-function getPkgJson(pkgDir: string): PackageJson | null {
-  try {
-    const pkgPath = path.join(pkgDir, 'package.json');
-    if (fs.existsSync(pkgPath)) {
-      return JSON.parse(fs.readFileSync(pkgPath, 'utf-8')) as PackageJson;
-    }
-  } catch {
-    /* empty */
-  }
-  return null;
-}
-
-export function analyzeDepCompatibility(): PluginCompatInfo[] {
+function depCompatibilityResults(): PluginCompatInfo[] {
   const nodeModules = path.resolve('node_modules');
   const allDirs = getAllNodeModulesDirs(nodeModules);
   const results: PluginCompatInfo[] = [];
@@ -94,5 +84,18 @@ export function analyzeDepCompatibility(): PluginCompatInfo[] {
       issues,
     });
   }
-  return results;
+  return results.filter((result) => !result.compatible);
+}
+
+export function analyzeDepCompatibility(): DepCompatibilityResult {
+  if (!hasEslint()) {
+    return {
+      useEslint: false,
+      issues: [],
+    };
+  }
+  return {
+    useEslint: true,
+    issues: depCompatibilityResults(),
+  };
 }

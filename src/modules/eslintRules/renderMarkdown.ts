@@ -1,23 +1,17 @@
-import { aggregateEslintRulesWithAPI } from '.';
-import type { FileRuleAnalysis } from '../../types';
+import type { EslintRulesResult } from '../../types';
 
-function render(enabledRuleList: FileRuleAnalysis[]): string {
-  let md = '## 规则聚合与状态分析\n';
-  for (const fileResult of enabledRuleList) {
-    const jsonFile = fileResult.fileType
-      ? `eslint-rules-for-${fileResult.fileType}.json`
-      : '';
-    if (jsonFile) {
-      md += `- **文件类型**: ${fileResult.fileType}  **规则总数**: [${fileResult.rules.length}](./${jsonFile})\n`;
+export function renderEslintRules(results: EslintRulesResult[]): string {
+  let md = '## Eslint 匹配规则如下：\n';
+
+  for (const result of results) {
+    if (result.errorMsg) {
+      md += `- **文件类型**: \`${result.ext}\` ， ❌ 分析失败: ${result.errorMsg}\n`;
     } else {
-      md += `- **文件类型**: ${fileResult.fileType}  **规则总数**: ${fileResult.rules.length}\n`;
+      const jsonFile = `eslint-rules-for-${result.ext.slice(1)}.json`;
+      md += `- **文件类型**: \`${result.ext}\` ， **生效规则总数**: [${result.rules.length}](./${jsonFile})\n`;
     }
   }
+
   md += '\n---\n\n';
   return md;
-}
-
-export async function renderEslintRules(): Promise<string> {
-  const enabledRuleList = await aggregateEslintRulesWithAPI();
-  return render(enabledRuleList);
 }

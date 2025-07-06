@@ -1,12 +1,19 @@
-import { analyzeDepCompatibility } from '.';
-import type { PluginCompatInfo } from '../../types';
+import type { DepAnalysisResult } from '../../types';
 
-function render(pluginResults: PluginCompatInfo[]): string {
-  let md = '## ESLint 相关插件兼容性检测\n';
-  for (const { name, version, compatible, issues } of pluginResults) {
-    md += `\n### 插件: \`${name}@${version}\``;
+export function renderDepCompatibility(
+  analysisResult: DepAnalysisResult
+): string {
+  let md = '## ESLint 相关依赖兼容性检测\n';
+
+  if (!analysisResult.useEslint) {
+    md += '- ❌ ESLint 未安装，跳过依赖分析\n';
+    return md;
+  }
+
+  for (const { name, version, compatible, issues } of analysisResult.issues) {
+    md += `\n### \`${name}@${version}\``;
     if (compatible) {
-      md += '\n- ✅ 兼容\n';
+      md += '- ✅ 兼容';
     } else {
       md += '\n- ❌ 存在兼容性问题：\n';
       for (const issue of issues) {
@@ -15,9 +22,4 @@ function render(pluginResults: PluginCompatInfo[]): string {
     }
   }
   return md;
-}
-
-export function renderDepCompatibility() {
-  const pluginResults = analyzeDepCompatibility();
-  return render(pluginResults);
 }

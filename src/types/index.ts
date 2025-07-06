@@ -1,6 +1,14 @@
 import type { Options as PrettierOptions } from 'prettier';
 
-export type IDEType = 'vscode' | 'webstorm' | 'cursor';
+export type IDEType = 'vscode' | 'cursor';
+
+export interface DepAnalysisResult {
+  useEslint: boolean;
+  issues: PluginCompatInfo[];
+}
+
+export type FileExtType = '.js' | '.ts' | '.jsx' | '.tsx' | '.vue';
+
 export interface PackageJson {
   name: string;
   version: string;
@@ -27,10 +35,8 @@ export interface ConfigFormatResult {
   eslintVersion: string;
   configType: 'flat' | 'eslintrc' | 'unknown';
   configFile: string | null;
-  configFilePath: string | null;
-  configFiles: { name: string; exists: boolean }[];
-  compatible: boolean;
   issues: string[];
+  configContent: string | null;
 }
 
 export interface RuleUsage {
@@ -42,14 +48,6 @@ export interface FileRuleAnalysis {
   fileType: string;
   filePath: string;
   rules: RuleUsage[];
-}
-
-export interface EditorConfigAnalysis {
-  exists: boolean;
-  content: string | null;
-  extensionInstalled: boolean;
-  detectIndentsEnabled: boolean;
-  effective: boolean;
 }
 
 export interface IDEExtensionInfo {
@@ -66,8 +64,36 @@ export interface NodeVersionInfo {
   nodePath: string;
 }
 
-export interface PrettierConfigByType {
-  fileType: string;
+export interface DepCompatibilityResult {
+  useEslint: boolean;
+  issues: PluginCompatInfo[];
+}
+
+export interface PrettierConfigResult {
+  ext: FileExtType;
   filePath: string;
+  errorMsg: string;
   prettierConfig: PrettierOptions | null;
+}
+
+export type IDESettings = Record<string, unknown>;
+
+export interface EslintRulesResult {
+  ext: FileExtType;
+  filePath: string;
+  errorMsg: string;
+  rules: RuleUsage[];
+}
+
+export interface HealthCheckData {
+  nodeInfo: NodeVersionInfo;
+  depCompatibility: DepCompatibilityResult;
+  eslintConfigFormat: ConfigFormatResult;
+  eslintRules: EslintRulesResult[];
+  prettierConfig: PrettierConfigResult[];
+  editorConfig: string | null;
+  ideSettings: IDESettings;
+  currentIDE: string;
+  hasEslintExtension: boolean;
+  hasPrettierExtension: boolean;
 }

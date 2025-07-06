@@ -6,18 +6,31 @@ import { renderIDEExtensions } from '../modules/ideExtensions/renderMarkdown';
 import { renderIDESettings } from '../modules/ideSettings/renderMarkdown';
 import { renderNodeInfo } from '../modules/nodeInfo/renderMarkdown';
 import { renderPrettierConfig } from '../modules/prettierConfig/renderMarkdown';
+import { HealthCheckData } from '../types';
 
-export async function generateMarkdownReport(ide: string): Promise<string> {
+export function generateMarkdownReport(
+  healthCheckData: HealthCheckData
+): string {
+  const {
+    nodeInfo,
+    depCompatibility,
+    eslintConfigFormat,
+    eslintRules,
+    prettierConfig,
+    editorConfig,
+    ideSettings,
+  } = healthCheckData;
+
   return [
     '# 🩺 ESLint 健康检查报告',
     '',
-    renderNodeInfo(),
-    renderIDEExtensions(ide),
-    renderIDESettings(ide),
-    renderEditorConfigMarkdown(ide),
-    renderEslintConfigFormat(),
-    await renderEslintRules(),
-    await renderPrettierConfig(),
-    renderDepCompatibility(),
+    renderNodeInfo(nodeInfo),
+    renderIDESettings(ideSettings),
+    renderIDEExtensions(healthCheckData),
+    renderDepCompatibility(depCompatibility),
+    renderEslintConfigFormat(eslintConfigFormat),
+    renderEslintRules(eslintRules),
+    renderPrettierConfig(prettierConfig),
+    renderEditorConfigMarkdown(editorConfig),
   ].join('\n');
 }

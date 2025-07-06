@@ -1,12 +1,12 @@
 import path from 'path';
 import fs from 'fs';
-import { ESLint } from 'eslint';
 import type { Linter } from 'eslint';
 import {
   createTmpFilesForTypes,
   cleanupTmpFiles,
 } from '../../utils/tmpFileUtil';
-import type { FileRuleAnalysis, RuleUsage } from '../../types';
+import type { EslintRulesResult, RuleUsage } from '../../types';
+import { getEslintClass } from '../../utils/eslintUtil';
 
 function getRuleStatus(value: (string | number)[]): 'off' | 'on' | 'warn' {
   let _value = value[0];
@@ -16,98 +16,64 @@ function getRuleStatus(value: (string | number)[]): 'off' | 'on' | 'warn' {
 }
 
 export async function aggregateEslintRulesWithAPI(): Promise<
-  FileRuleAnalysis[]
+  EslintRulesResult[]
 > {
-  let ESLintClass: typeof ESLint;
-  try {
-    const eslintModule = require(
-      require.resolve('eslint', { paths: [process.cwd()] })
-    ) as { ESLint: typeof ESLint };
-    if (eslintModule && typeof eslintModule.ESLint === 'function') {
-      ESLintClass = eslintModule.ESLint;
-    } else {
-      throw new Error('ESLint module does not export ESLint class');
-    }
-  } catch (error) {
-    console.error(error);
-    throw new Error('未检测到项目依赖 eslint，请先在项目中安装 eslint。');
+  let ESLintClass = getEslintClass();
+  if (!ESLintClass) {
+    return [];
   }
   // 使用公共工具创建临时文件
   const tmpFiles = createTmpFilesForTypes();
+  const results: EslintRulesResult[] = tmpFiles.map((v) => ({
+    ...v,
+    errorMsg: '',
+    rules: [],
+  }));
   const eslint = new ESLintClass();
-  const results: FileRuleAnalysis[] = [];
   const outputDir = path.join(process.cwd(), 'eslint-health-check');
   fs.mkdirSync(outputDir, { recursive: true });
-  for (const { ext, filePath } of tmpFiles) {
+
+  for (const result of results) {
+    const { ext, filePath } = result;
     let config: Linter.Config | null = null;
+
     try {
       config = (await eslint.calculateConfigForFile(filePath)) as Linter.Config;
     } catch (e: unknown) {
-      if (e instanceof Error) {
-        const errorResult: FileRuleAnalysis = {
-          fileType: ext,
-          filePath,
-          rules: [
-            {
-              name: 'config-error',
-              status: 'off',
-              value: [e.message],
-            },
-          ],
-        };
-        results.push(errorResult);
-        fs.writeFileSync(
-          path.join(outputDir, `eslint-rules-for-${ext}.json`),
-          JSON.stringify(errorResult.rules, null, 2),
-          'utf-8'
-        );
-        continue;
-      }
-    }
-    if (!config) {
-      const errorResult: FileRuleAnalysis = {
-        fileType: ext,
-        filePath,
-        rules: [
-          {
-            name: 'config-error',
-            status: 'off',
-            value: ['ESLint config is undefined'],
-          },
-        ],
-      };
-      results.push(errorResult);
-      fs.writeFileSync(
-        path.join(outputDir, `eslint-rules-for-${ext}.json`),
-        JSON.stringify(errorResult.rules, null, 2),
-        'utf-8'
-      );
+      result.errorMsg =
+        e instanceof Error ? e.message : `Failed to analyze ${ext}`;
       continue;
     }
-    const rules = (config.rules ?? {}) as Record<string, Linter.RuleEntry>;
-    const ruleList: RuleUsage[] = [];
-    for (const [name, value] of Object.entries(rules)) {
+    if (!config) {
+      result.errorMsg = 'Failed to fetch ESLint config for file';
+      continue;
+    }
+    const rules: RuleUsage[] = [];
+    const eslintRules = (config.rules ?? {}) as Record<
+      string,
+      Linter.RuleEntry
+    >;
+    for (const [name, value] of Object.entries(eslintRules)) {
       if (typeof value === 'undefined') continue;
       const arrValue = Array.isArray(value) ? value : [value];
-      ruleList.push({
+      rules.push({
         name,
         status: getRuleStatus(arrValue as (string | number)[]),
         value: arrValue as (string | number)[],
       });
     }
-    const fileResult: FileRuleAnalysis = {
-      fileType: ext,
-      filePath,
-      rules: ruleList,
-    };
-    results.push(fileResult);
+
+    // 保存规则到文件
     fs.writeFileSync(
-      path.join(outputDir, `eslint-rules-for-${ext}.json`),
-      JSON.stringify(ruleList, null, 2),
+      path.join(outputDir, `eslint-rules-for-${ext.slice(1)}.json`),
+      JSON.stringify(rules, null, 2),
       'utf-8'
     );
+    result.rules = rules;
   }
+
   // 删除临时文件
   cleanupTmpFiles(tmpFiles);
+
   return results;
 }

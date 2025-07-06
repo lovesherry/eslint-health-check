@@ -1,8 +1,6 @@
-import { getIDESettingsCategories } from './index';
+import type { IDESettings } from '../../types';
 
-function render(
-  categories: Record<string, Record<string, unknown>> | null
-): string {
+export function renderIDESettings(categories: IDESettings): string {
   let md = `## IDE 配置\n`;
   if (categories) {
     md += '```json\n';
@@ -13,8 +11,4 @@ function render(
   }
   md += '\n---\n';
   return md;
-}
-export function renderIDESettings(ide: string): string {
-  const categories = getIDESettingsCategories(ide);
-  return render(categories);
 }

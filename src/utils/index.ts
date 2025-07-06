@@ -1,1 +1,2 @@
-// 这里将聚合各工具函数
+// Aggregate utility functions
+export * from './inquirer';
